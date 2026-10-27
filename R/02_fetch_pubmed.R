@@ -50,7 +50,7 @@ parse_pubmed_xml <- function(xml_text) {
 #' hacen que ESE lote en particular sea mas largo de lo esperado — por eso
 #' no basta con fijar un tamano de lote validado con una muestra, hace
 #' falta recuperarse automaticamente del caso real. Mismo patron que
-#' `ctgov_query_batch()` en R/01_fetch_clinicaltrials.R. Ver DECISIONS.md
+#' `ctgov_query_batch()` en R/02_fetch_clinicaltrials.R. Ver DECISIONS.md
 #' (2026-10-04).
 pubmed_esearch_batch <- function(pop, drug_batch, treat, date_filter, api_key, retmax = 3000) {
   terms <- paste0('"', drug_batch, '"[tiab]')
@@ -96,7 +96,7 @@ fetch_pubmed <- function(cfg, drug_catalog) {
   chunk_size <- cfg$drug_branch$chunk_size %||% 80
   min_chars <- cfg$drug_branch$min_name_chars %||% 4
 
-  # prepare_match_names() (R/05_catalogo_farmacos.R), no
+  # prepare_match_names() (R/01_catalogo_farmacos.R), no
   # drug_catalog$preferred_name directo — asi la busqueda excluye los MISMOS
   # nombres de ruido (glucose/oxygen/hydrogen peroxide/bevacizumab) que ya
   # excluye match_drugs_to_articles(). Ver DECISIONS.md (bug 2026-09-30).

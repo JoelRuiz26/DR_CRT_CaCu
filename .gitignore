@@ -17,6 +17,9 @@ renv/sandbox/
 # etapas posteriores no incluidas todavía en el repositorio (ver README)
 R/04_fetch_fulltext.R
 
+# vestigio de la deduplicación en R, ya retirada (ver DECISIONS.md)
+tests/
+
 # datos generados por etapa (no versionados; se regeneran o se archivan aparte)
 data/01_busqueda/*
 !data/01_busqueda/raw/

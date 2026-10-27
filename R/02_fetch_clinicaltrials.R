@@ -73,7 +73,7 @@ ctgov_query_batch <- function(pop, drug_batch, treat, date_filter, raw_dir, max_
 
 #' Busqueda en ClinicalTrials.gov API v2: poblacion AND nombre_de_farmaco AND
 #' tratamiento estandar, en lotes del mismo tamano de partida que PubMed
-#' (homogenizacion explicita para metodos, ver R/01_fetch_pubmed.R y
+#' (homogenizacion explicita para metodos, ver R/02_fetch_pubmed.R y
 #' DECISIONS.md) — "de partida" porque `ctgov_query_batch()` puede bisectar
 #' un lote hacia abajo si el motor de busqueda lo rechaza.
 fetch_clinicaltrials <- function(cfg, drug_catalog) {
@@ -91,7 +91,7 @@ fetch_clinicaltrials <- function(cfg, drug_catalog) {
   chunk_size <- cfg$drug_branch$chunk_size %||% 80
   min_chars <- cfg$drug_branch$min_name_chars %||% 4
 
-  # Ver R/01_fetch_pubmed.R para por que se usa prepare_match_names() en vez
+  # Ver R/02_fetch_pubmed.R para por que se usa prepare_match_names() en vez
   # de drug_catalog$preferred_name directo (excluye glucose/oxygen/hydrogen
   # peroxide/bevacizumab, el mismo bug de ruido de busqueda). Ver DECISIONS.md.
   match_names <- prepare_match_names(drug_catalog, min_chars = min_chars)
