@@ -1,0 +1,59 @@
+# targets cache
+_targets/
+_targets.yaml
+
+# renv
+renv/library/
+renv/local/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# datos generados por etapa (no versionados; se regeneran o se archivan aparte)
+data/01_busqueda/*
+!data/01_busqueda/raw/
+data/01_busqueda/raw/*
+!data/01_busqueda/raw/pubmed/
+!data/01_busqueda/raw/clinicaltrials/
+data/01_busqueda/raw/pubmed/*
+!data/01_busqueda/raw/pubmed/.gitkeep
+data/01_busqueda/raw/clinicaltrials/*
+!data/01_busqueda/raw/clinicaltrials/.gitkeep
+data/03_cribado/*
+!data/03_cribado/.gitkeep
+data/04_texto_completo/*
+!data/04_texto_completo/.gitkeep
+data/05_catalogo_farmacos/*
+!data/05_catalogo_farmacos/.gitkeep
+
+# outputs generados
+outputs/figures/*
+!outputs/figures/.gitkeep
+outputs/tables/*
+!outputs/tables/.gitkeep
+outputs/prisma/*
+!outputs/prisma/.gitkeep
+
+# logs
+logs/*.log
+
+# secretos
+.Renviron
+.env
+
+# documentos de trabajo / presentaciones (no son parte del pipeline reproducible)
+*.pptx
+*.pptx.bak
+*.docx
+Images/
+
+# artefactos de Windows/WSL al descargar archivos
+*:Zone.Identifier
+
+# estado local de herramientas (Claude Code), no parte del proyecto
+.claude/

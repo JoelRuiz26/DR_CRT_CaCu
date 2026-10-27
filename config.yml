@@ -1,0 +1,143 @@
+project:
+  title: "Reposicionamiento de farmacos no oncologicos como sensibilizadores de la quimiorradiacion en cancer cervicouterino"
+  registration: "OSF: pendiente de DOI de registro"
+
+paths:
+  raw: "data/01_busqueda/raw"
+  stage1: "data/01_busqueda"
+  stage3: "data/03_cribado"
+  stage4: "data/04_texto_completo"
+  stage5: "data/05_catalogo_farmacos"
+  outputs: "outputs"
+  logs: "logs"
+
+apis:
+  ncbi_api_key_env: "NCBI_API_KEY"
+  rate_limit_no_key: 3
+  rate_limit_with_key: 10
+  http_max_tries: 5
+
+# --- Etapa 1: busqueda ---
+# Fuentes: PubMed y ClinicalTrials.gov unicamente (sin Scopus/Web of Science
+# por falta de acceso institucional; sin Europe PMC, ver DECISIONS.md). El
+# nombre de farmaco SI es parte de la busqueda (rama por farmaco, ver
+# drug_branch mas abajo) — este comentario describia un diseno anterior ya
+# retirado. Ver DECISIONS.md para el historial completo.
+retrieval:
+  max_records: 5000  # techo de seguridad, no un tope real (ver DECISIONS.md)
+  # 2026-09-29. Restriccion temporal, decision explicita del usuario: cambia
+  # el criterio original "sin limite de fecha" de Propuesta_art_revision.docx.
+  # Justificacion: Ashburn TT, Thor KB. "Drug repositioning: identifying and
+  # developing new uses for existing drugs." Nat Rev Drug Discov.
+  # 2004;3(8):673-83 — el articulo fundacional mas citado que formalizo
+  # "drug repositioning/repurposing" como estrategia de investigacion con
+  # ese nombre; antes de eso el concepto central de esta revision casi no
+  # se usaba en la literatura con ese marco. En vez de fijar el anio exacto
+  # (2004), se implementa como ventana movil de N anios hacia atras desde
+  # la fecha de la corrida (mismo espiritu, mas facil de reproducir y
+  # documentar en cada corrida futura). Impacto medido sobre el corpus real
+  # con esta ventana: de 1,088 a 725 registros (se van 363). Ver
+  # DECISIONS.md para las alternativas evaluadas y descartadas (el
+  # estandar de quimiorradiacion con cisplatino de 1999-2000; la revision
+  # FIGO 2018; la duracion tipica de un reposicionamiento) y por que esta
+  # es la mejor justificada para el tema central de la revision.
+  years_back: 20
+  # No hay un filtro de idioma real aplicado via API (PubMed no tiene un
+  # parametro de idioma en esta cadena, ClinicalTrials.gov tampoco). La
+  # restriccion a ingles es IMPLICITA: los terminos de busqueda estan
+  # escritos en ingles, asi que un articulo con resumen exclusivamente en
+  # espanol simplemente no coincide con ninguna frase de la cadena. Ver
+  # DECISIONS.md para el riesgo declarado (literatura latinoamericana en
+  # espanol sin resumen en ingles).
+
+# --- 2026-09-29. Cadena unica reorganizada, decision explicita del usuario:
+# se retira la rama de sensibilizacion (vocabulario de mecanismo) y queda
+# UNA sola logica de busqueda para las dos fuentes: enfermedad AND nombre de
+# farmaco no oncologico AND tratamiento estandar. El nombre de farmaco viene
+# del catalogo (build_drug_catalog(), 2,824 ingredientes) y se agrupa en
+# lotes porque no cabe en una sola consulta. Ver DECISIONS.md para el
+# historial completo (por que hubo antes una rama de mecanismo, por que se
+# retiro, y la corrida previa con ambas ramas). Los bloques de poblacion y
+# tratamiento son subcadenas EXACTAS de las cadenas ya auditadas
+# anteriormente (mismos caracteres, misma redaccion en las dos fuentes,
+# salvo `[tiab]`/`[MeSH]` que solo aplica a PubMed).
+# 2026-09-29. Bloque de tratamiento: solo cisplatino + carboplatino,
+# CORREGIDO tras dos pasadas. Primera pasada (mismo dia): se agregaron 6
+# citostaticos (carboplatin, paclitaxel, gemcitabine, topotecan, mitomycin,
+# fluorouracil) tras encontrar un caso real perdido — Tang ZY et al. 2018
+# (10.26355/eurrev_201812_16501, PMID 30556847), metformina+CARBOPLATINO.
+# Correccion inmediata (mismo dia, el usuario pidio verificar contra guia
+# clinica real): de esos 6, solo carboplatino pertenece aqui. Segun las
+# guias vigentes (NCCN/ESGO-ESTRO-ESP), paclitaxel, gemcitabina, topotecan,
+# mitomicina y fluorouracilo NO se dan concurrentes con radiacion en cancer
+# cervicouterino — son quimioterapia SOLA, usada en enfermedad
+# recurrente/metastasica (manejo sistemico paliativo) o como induccion
+# neoadyuvante ANTES de la quimiorradiacion (ej. protocolo INTERLACE 2024:
+# carboplatino+paclitaxel x6 semanas, despues SI la quimiorradiacion
+# estandar con cisplatino) — nunca junto con radiacion. El propio criterio
+# de inclusion del protocolo original (Propuesta_art_revision.docx, S6)
+# exige explicitamente "combinacion con cisplatino, con radiacion ionizante
+# o con ambos" — no "cualquier citostatico de cancer cervicouterino".
+# Carboplatino si aplica: es sustituto reconocido en guia para el MISMO rol
+# concurrente cuando el cisplatino esta contraindicado (falla renal,
+# ototoxicidad), mismo escenario clinico que busca esta revision. Ver
+# DECISIONS.md para el detalle completo de ambas pasadas.
+#
+# 2026-10-13. Bloque de tratamiento ANGOSTADO a solo (cisplatin[tiab] OR
+# carboplatin[tiab]) — se quitan radiotherapy/"radiation therapy"/
+# chemoradiation/chemoradiotherapy/brachytherapy. Decision explicita del
+# usuario, objetivo declarado: reducir el universo de articulos. Validado
+# empiricamente antes de aplicar (script ad-hoc contra la API real de
+# PubMed, mismos 2,004 nombres de farmaco en lotes de 80, misma poblacion y
+# fecha, unico cambio el bloque de tratamiento): cadena amplia = 566 PMIDs
+# unicos, cadena angosta = 256 PMIDs unicos, 0 PMIDs nuevos que la cadena
+# amplia no tuviera ya (es decir, los 256 son subconjunto exacto de los
+# 566) — se pierden 310. Ver DECISIONS.md para el detalle completo y el
+# riesgo declarado: se excluyen articulos que mencionan el tratamiento como
+# "chemoradiation"/"brachytherapy" en el resumen sin nombrar el citostatico
+# explicitamente en el texto indexado (ej. un ensayo centrado en la tecnica
+# de radioterapia que solo menciona el farmaco en metodologia). Los numeros
+# de PubMed de aqui en adelante (articles_raw, dedup, exclusiones, Rayyan)
+# reflejan esta cadena angosta tras la proxima corrida de tar_make().
+search_string:
+  pubmed_population: >-
+    ("cervical cancer"[tiab] OR "Uterine Cervical Neoplasms"[MeSH] OR "cervix cancer"[tiab]
+    OR "cervical carcinoma"[tiab] OR "carcinoma of the cervix"[tiab] OR "cancer of the cervix"[tiab]
+    OR "uterine cervical cancer"[tiab])
+  pubmed_treatment: >-
+    (cisplatin[tiab] OR carboplatin[tiab])
+  ctgov_population: >-
+    ("cervical cancer" OR "Uterine Cervical Neoplasms" OR "cervix cancer"
+    OR "cervical carcinoma" OR "carcinoma of the cervix" OR "cancer of the cervix"
+    OR "uterine cervical cancer")
+  ctgov_treatment: >-
+    (cisplatin OR carboplatin)
+
+logging:
+  level: "INFO"
+  file: "logs/pipeline.log"
+
+# --- Rama por farmaco (Propuesta_art_revision.docx, S6: "Busqueda nominal
+# para cada candidato"). Poblacion AND nombre_de_farmaco AND tratamiento, en
+# lotes porque el catalogo no cabe en una sola consulta.
+#
+# 2026-10-04. UN SOLO `chunk_size` para las dos fuentes (antes PubMed usaba
+# 120 y ClinicalTrials.gov 100, cada uno con su propio mecanismo para
+# manejar fallas) — decision explicita del usuario para que la metodologia
+# sea homogenea entre bases de datos y facil de describir en una sola frase
+# en la seccion de metodos. Se eligio 80 porque es el lote mas grande que
+# funciona con una peticion `GET` simple y estandar ({rentrez} normal, sin
+# trucos de `POST`) en las DOS fuentes, sin necesitar ninguna logica de
+# reintento: verificado empiricamente contra el catalogo completo antes de
+# fijarlo — PubMed no da error hasta ~95-99 nombres por lote; en
+# ClinicalTrials.gov, cuyo motor de busqueda (Essie) a veces rechaza lotes
+# grandes con HTTP 400 sin relacion clara con el numero de terminos, se
+# probaron los 2,008 nombres completos en lotes de 80 contra la API real:
+# 26/26 lotes, cero fallos. Con esto se eliminaron del codigo el envio por
+# `POST` a esearch/efetch.fcgi (ya no hace falta, {rentrez} normal alcanza)
+# y la biseccion recursiva de lotes rechazados (ya no ocurren). Ver
+# DECISIONS.md para el detalle de la validacion.
+drug_branch:
+  enabled: true
+  chunk_size: 80
+  min_name_chars: 4
