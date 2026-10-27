@@ -8,6 +8,49 @@ cervicouterino.
 Cada etapa se ejecuta y se revisa antes de pasar a la siguiente — no se
 avanza a la etapa N+1 sin aprobación explícita.
 
+Este repositorio cubre, por ahora, **solo la obtención de datos**: desde el
+catálogo de fármacos hasta el archivo exportado a Rayyan. Todo lo posterior
+(texto completo, extracción de datos, síntesis) todavía no se implementa.
+
+---
+
+## Esquema del pipeline
+
+```
+config.yml (cadena de búsqueda, parámetros)
+            │
+            ▼
+RxClass — clases ATC no oncológicas (excluye L01/L02)
+            │   2,826 ingredientes
+            ▼
+RxNorm Prescribable Content — filtro de vigencia
+            │   rxnorm_is_prescribable()
+            ▼
+Catálogo de fármacos no oncológicos y vigentes
+            │   1,626 ingredientes
+            │
+     ┌──────┴──────┐
+     ▼             ▼
+  PubMed       ClinicalTrials.gov
+(E-utilities/    (API v2)
+  rentrez)
+     │             │
+     └──────┬──────┘
+            ▼
+articles_raw.csv — 460 registros combinados, sin deduplicar
+            │
+            ▼
+classify_metadata_exclusions()
+  — 32 excluidos: ensayos sin datos posibles, revisiones (secundarias)
+            │
+            ▼
+para_rayyan.ris — 428 registros ← salida de este repositorio
+            │
+            ▼
+   (fuera de este repo) Rayyan: deduplicación al importar,
+   cribado ciego por 2 revisores, kappa de Cohen
+```
+
 ---
 
 ## Principios de diseño
@@ -94,7 +137,6 @@ DR_CRT_CaCu/
 │   ├── 01_fetch_pubmed.R
 │   ├── 01_fetch_clinicaltrials.R
 │   ├── 03_export_screening.R  # exclusiones estructurales + export a Rayyan (RIS)
-│   ├── 04_fetch_fulltext.R    # escrito y probado, NO se ejecuta (ver DECISIONS.md)
 │   └── 05_catalogo_farmacos.R # catálogo RxNorm + emparejamiento (título+resumen)
 ├── data/
 │   ├── 01_busqueda/
@@ -107,8 +149,7 @@ DR_CRT_CaCu/
 │   │   └── articles_raw.csv   # artículos combinados, SIN deduplicar (eso lo hace Rayyan)
 │   ├── 05_catalogo_farmacos/
 │   │   └── drug_catalog.csv          # 1,626 ingredientes no oncológicos y vigentes
-│   ├── 03_cribado/             # export a Rayyan: todo lo combinado menos exclusiones estructurales
-│   └── 04_texto_completo/      # sin usar por ahora (ver DECISIONS.md)
+│   └── 03_cribado/             # export a Rayyan: todo lo combinado menos exclusiones estructurales
 ├── outputs/
 │   ├── figures/
 │   ├── tables/
@@ -187,18 +228,9 @@ título/resumen) es el que llena la siguiente caja del diagrama PRISMA,
 pendiente hasta que el equipo lo haga. Después sigue el cribado ciego por
 dos revisores y el kappa de Cohen.
 
-**Etapa 3 — Texto completo de los incluidos tras Rayyan.** *Pendiente.*
-`R/04_fetch_fulltext.R` ya está escrito y probado (JATS vía NCBI efetch,
-excluye bibliografía) — se retoma aquí, sobre un conjunto ya pequeño y ya
-cribado, donde el riesgo de ruido de reactivos importa menos.
-
-**Etapa 4 — Emparejamiento fino para Tabla 1.** *Pendiente.* Sobre los
-incluidos con texto completo, reutiliza `match_drugs_to_articles()` para
-extraer con qué evidencia (sección, cita textual) se mencionó cada
-fármaco.
-
-**Etapa 5 — Conjunto final y PRISMA.** *Pendiente.* Diagrama de flujo,
-verificación de DOIs.
+`para_rayyan.ris` es, por ahora, la salida final de este repositorio. Las
+etapas posteriores (texto completo, extracción de datos, síntesis) se
+documentarán aquí cuando se implementen.
 
 ---
 

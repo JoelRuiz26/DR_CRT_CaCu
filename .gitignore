@@ -14,6 +14,9 @@ renv/sandbox/
 .RData
 .Rproj.user/
 
+# etapas posteriores no incluidas todavía en el repositorio (ver README)
+R/04_fetch_fulltext.R
+
 # datos generados por etapa (no versionados; se regeneran o se archivan aparte)
 data/01_busqueda/*
 !data/01_busqueda/raw/
@@ -27,7 +30,6 @@ data/01_busqueda/raw/clinicaltrials/*
 data/03_cribado/*
 !data/03_cribado/.gitkeep
 data/04_texto_completo/*
-!data/04_texto_completo/.gitkeep
 data/05_catalogo_farmacos/*
 !data/05_catalogo_farmacos/.gitkeep
 
