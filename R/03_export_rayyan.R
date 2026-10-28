@@ -1,6 +1,6 @@
-#' Escribe un solo registro en formato RIS (formato estandar que importa
-#' Rayyan/EndNote/Zotero). TY=JOUR para todo (PubMed y ClinicalTrials.gov)
-#' por compatibilidad simple de importacion.
+#' Writes a single record in RIS format (the standard format Rayyan,
+#' EndNote and Zotero import). TY=JOUR for everything, for simple import
+#' compatibility across both sources.
 ris_record <- function(row) {
   lines <- c("TY  - JOUR")
   if (!is.na(row$title)) lines <- c(lines, paste("TI  -", row$title))
@@ -16,35 +16,22 @@ ris_record <- function(row) {
   lines
 }
 
-#' Escribe el archivo RIS completo para importar a Rayyan.
+#' Writes the full RIS file for import into Rayyan.
 write_ris <- function(articles, path) {
   all_lines <- unlist(purrr::map(seq_len(nrow(articles)), function(i) ris_record(articles[i, ])))
   writeLines(all_lines, path)
   invisible(path)
 }
 
-#' Excluye antes de Rayyan por razones ESTRUCTURALES (metadatos ya
-#' asignados por NLM/ClinicalTrials.gov, no texto de titulo/resumen):
-#' decision explicita del usuario, 2026-10-06, ver DECISIONS.md.
-#' - ClinicalTrials.gov con estado WITHDRAWN (retirado antes de inscribir a
-#'   un solo paciente) o NOT_YET_RECRUITING (registrado pero aun no
-#'   reclutando a nadie): no pueden tener ningun dato que aportar, no es
-#'   una exclusion de "probablemente irrelevante", es que el estudio no
-#'   ha ocurrido todavia. Sin riesgo de perder evidencia real.
-#' - PubMed con publication_type "Review"/"Systematic Review": evidencia
-#'   secundaria, no primaria (el protocolo pide diseños primarios: in
-#'   vitro, in vivo, fase I-III, observacional). Se separan para mineria
-#'   manual de referencias (ya planeada para Capistrano/Candelaria/Low/
-#'   Julian, aqui se extiende a TODAS las revisiones que la propia
-#'   busqueda encontro), no se descartan sin mas.
-#' - PubMed con publication_type "Retracted Publication"/"Retraction of
-#'   Publication": retirado formalmente por la revista, no cuenta como
-#'   evidencia valida bajo ningun criterio.
-#' - PubMed con publication_type "Editorial"/"Comment"/"Letter"/"News":
-#'   mismo argumento que las revisiones, evidencia secundaria.
-#' - PubMed con publication_type "Clinical Trial Protocol": publica el
-#'   diseño de un ensayo que aun no reporta resultados — mismo caso que
-#'   NOT_YET_RECRUITING, no hay efecto de combinacion que extraer todavia.
+#' Excludes records before Rayyan for STRUCTURAL reasons only (metadata
+#' already assigned by NLM/ClinicalTrials.gov, not title/abstract text):
+#' - ClinicalTrials.gov WITHDRAWN or NOT_YET_RECRUITING: no participant was
+#'   ever enrolled, so there is no data to extract.
+#' - PubMed reviews/systematic reviews: secondary evidence, not primary;
+#'   kept aside for manual reference mining, not discarded.
+#' - PubMed retracted publications: formally withdrawn by the journal.
+#' - PubMed editorials/comments/letters/news: secondary evidence.
+#' - PubMed clinical trial protocols: design-only, no results yet.
 classify_metadata_exclusions <- function(articles) {
   ct_sin_datos <- articles$source == "clinicaltrials" &
     articles$publication_type %in% c("WITHDRAWN", "NOT_YET_RECRUITING")
@@ -72,23 +59,11 @@ classify_metadata_exclusions <- function(articles) {
   articles
 }
 
-#' Exporta a Rayyan (RIS) el corpus combinado (SIN deduplicar en R — ver
-#' DECISIONS.md 2026-10-15: Rayyan ya deduplica al importar por
-#' DOI/titulo/autores/anio, asi que reimplementar esa misma logica en R era
-#' trabajo duplicado e innecesariamente "casero" frente a un algoritmo ya
-#' publicado y mantenido. El conteo de "duplicados eliminados" del diagrama
-#' PRISMA ahora se llena DESPUES, con lo que reporte Rayyan tras el import,
-#' no antes en R), menos las exclusiones estructurales de
-#' `classify_metadata_exclusions()` (eso si se queda en R: son reglas sobre
-#' un campo de metadato que Rayyan no tiene forma de evaluar — el estado de
-#' ClinicalTrials.gov o el tipo de publicacion de PubMed — no son
-#' deduplicacion). Nada de filtro por presencia de fármaco en el texto — el
-#' nombre de fármaco ya es un requisito obligatorio de la busqueda (etapa
-#' 1), asi que exigirlo otra vez aqui seria redundante para PubMed y, para
-#' ClinicalTrials.gov, incorrectamente estricto (su buscador confirma el
-#' fármaco en campos del registro que no siempre estan en el resumen
-#' descargado). Decision explicita del usuario, 2026-09-30. Ver
-#' DECISIONS.md.
+#' Exports the combined corpus to Rayyan (RIS), without deduplicating in R
+#' (Rayyan deduplicates on import by DOI/title/authors/year) and without
+#' filtering by drug-name presence in the text (already required by the
+#' search query). Only the structural exclusions from
+#' `classify_metadata_exclusions()` are applied here.
 export_screening_set <- function(articles_combined, cfg) {
   dir <- cfg$paths$stage3
   fs::dir_create(dir)

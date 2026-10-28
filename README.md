@@ -1,30 +1,29 @@
-# Pipeline de búsqueda — Reposicionamiento farmacológico y quimiorradiación en cáncer cervicouterino
+# Search pipeline — Drug repurposing and chemoradiation in cervical cancer
 
-Búsqueda bibliográfica para una revisión de alcance (PRISMA-ScR) sobre
-fármacos no oncológicos combinados con cisplatino o carboplatino, con o sin
-radiación, en cáncer cervicouterino.
+Literature search pipeline for a scoping review (PRISMA-ScR) on
+non-oncological drugs combined with cisplatin or carboplatin, with or
+without radiation, in cervical cancer.
 
-Este repositorio hace solo esto: arma el catálogo de fármacos, busca en
-PubMed y ClinicalTrials.gov, aplica exclusiones estructurales, y genera el
-archivo que se importa a Rayyan para el cribado. El detalle completo de
-cada decisión metodológica está en `DECISIONS.md`.
+This repository does only this: builds the drug catalog, searches PubMed
+and ClinicalTrials.gov, applies structural exclusions, and generates the
+file imported into Rayyan for screening.
 
 ---
 
-## Esquema del pipeline
+## Pipeline
 
 ```
-config.yml (cadena de búsqueda, parámetros)
+config.yml (search strings, parameters)
             │
             ▼
-RxClass — clases ATC no oncológicas (excluye L01/L02)
-            │   2,826 ingredientes
+RxClass — non-oncology ATC classes (excludes L01/L02)
+            │   2,826 ingredients
             ▼
-RxNorm Prescribable Content — filtro de vigencia
+RxNorm Prescribable Content — currently marketed filter
             │
             ▼
-Catálogo de fármacos no oncológicos y vigentes
-            │   1,626 ingredientes
+Non-oncological, currently marketed drug catalog
+            │   1,626 ingredients
             │
      ┌──────┴──────┐
      ▼             ▼
@@ -32,41 +31,41 @@ Catálogo de fármacos no oncológicos y vigentes
      │             │
      └──────┬──────┘
             ▼
-articles_raw.csv — 460 registros combinados, sin deduplicar
+articles_raw.csv — 460 combined records, not deduplicated
             │
             ▼
-classify_metadata_exclusions() — 32 excluidos
+classify_metadata_exclusions() — 32 excluded
             │
             ▼
-para_rayyan.ris — 428 registros ← salida de este repositorio
+para_rayyan.ris — 428 records ← output of this repository
             │
             ▼
-   (fuera de este repo) Rayyan: deduplicación al importar,
-   cribado ciego por 2 revisores, kappa de Cohen
+   (outside this repo) Rayyan: dedup on import,
+   blind screening by 2 reviewers, Cohen's kappa
 ```
 
 ---
 
 ## Scripts (`R/`)
 
-1. **`01_catalogo_farmacos.R`** — catálogo de fármacos no oncológicos y
-   vigentes (RxClass + RxNorm). 2,826 → 1,626 ingredientes.
-2. **`02_fetch_pubmed.R`** / **`02_fetch_clinicaltrials.R`** — búsqueda en
-   cada fuente, mismo criterio: población AND fármaco AND tratamiento.
-   243 + 217 = 460 registros.
-3. **`03_export_rayyan.R`** — exclusiones estructurales (ensayos sin datos,
-   revisiones) y exporta a `para_rayyan.ris`. 460 → 428.
+1. **`01_catalogo_farmacos.R`** — non-oncological, currently marketed drug
+   catalog (RxClass + RxNorm). 2,826 → 1,626 ingredients.
+2. **`02_fetch_pubmed.R`** / **`02_fetch_clinicaltrials.R`** — search both
+   sources with the same criteria: population AND drug AND treatment.
+   243 + 217 = 460 records.
+3. **`03_export_rayyan.R`** — structural exclusions (trials with no
+   possible data, reviews) and export to `para_rayyan.ris`. 460 → 428.
 
-`utils_http.R`, `utils_io.R`, `utils_logging.R` — utilidades compartidas.
+`utils_http.R`, `utils_io.R`, `utils_logging.R` — shared utilities.
 
 ---
 
-## Cómo correr
+## Running it
 
 ```r
-renv::restore()          # una vez, para instalar las versiones fijadas
-targets::tar_make()      # corre el pipeline
-targets::tar_visnetwork()  # ver el grafo
+renv::restore()          # once, to install the pinned versions
+targets::tar_make()      # run the pipeline
+targets::tar_visnetwork()  # view the dependency graph
 ```
 
-El log de cada corrida queda en `logs/pipeline.log`.
+Each run's log is written to `logs/pipeline.log`.

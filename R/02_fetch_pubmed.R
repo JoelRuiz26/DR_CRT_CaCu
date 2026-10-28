@@ -1,4 +1,4 @@
-#' Parsea un bloque de PubmedArticle XML al esquema normalizado.
+#' Parses a block of PubmedArticle XML into the normalized schema.
 parse_pubmed_xml <- function(xml_text) {
   doc <- xml2::read_xml(xml_text)
   articles <- xml2::xml_find_all(doc, ".//PubmedArticle")
@@ -41,17 +41,11 @@ parse_pubmed_xml <- function(xml_text) {
   })
 }
 
-#' esearch de un lote de nombres de farmaco contra PubMed, con biseccion
-#' automatica si el lote es rechazado por ser la URL demasiado larga (HTTP
-#' 414). El tamano de lote (`chunk_size`) se valido contra una muestra de
-#' nombres cortos (los primeros alfabeticamente) y parecia seguro hasta
-#' ~95-99 nombres, pero un lote real puede incluir varios nombres largos
-#' (combinaciones de dos farmacos, ej. "dutasteride / tamsulosin") que
-#' hacen que ESE lote en particular sea mas largo de lo esperado — por eso
-#' no basta con fijar un tamano de lote validado con una muestra, hace
-#' falta recuperarse automaticamente del caso real. Mismo patron que
-#' `ctgov_query_batch()` en R/02_fetch_clinicaltrials.R. Ver DECISIONS.md
-#' (2026-10-04).
+#' esearch for a batch of drug names against PubMed. Bisects the batch
+#' automatically if rejected for a too-long URL (HTTP 414) — a fixed batch
+#' size can still produce an oversized URL when several long drug-combo
+#' names land in the same batch. Same pattern as `ctgov_query_batch()` in
+#' R/02_fetch_clinicaltrials.R.
 pubmed_esearch_batch <- function(pop, drug_batch, treat, date_filter, api_key, retmax = 3000) {
   terms <- paste0('"', drug_batch, '"[tiab]')
   q <- paste0(pop, " AND ", treat, " AND (", paste(terms, collapse = " OR "), ") AND ", date_filter)
@@ -69,16 +63,9 @@ pubmed_esearch_batch <- function(pop, drug_batch, treat, date_filter, api_key, r
   list(count = as.integer(res$count), ids = res$ids)
 }
 
-#' Busqueda en PubMed: poblacion AND tratamiento estandar AND
-#' nombre_de_farmaco (el bloque de farmaco va al final), en lotes porque el
-#' catalogo completo no cabe en una sola consulta. Lote de tamano
-#' `drug_branch$chunk_size`, el MISMO numero que ClinicalTrials.gov
-#' (homogenizacion explicita para metodos, 2026-10-04) — "de partida",
-#' porque `pubmed_esearch_batch()` puede bisectar un lote hacia abajo si la
-#' URL resulta demasiado larga. Antes de esto existio una rama de
-#' sensibilizacion (poblacion AND tratamiento AND vocabulario de mecanismo,
-#' sin nombrar farmaco) que se retiro — ver DECISIONS.md para el historial
-#' completo.
+#' PubMed search: population AND standard treatment AND drug name, batched
+#' by `drug_branch$chunk_size` (same size as ClinicalTrials.gov) since the
+#' full catalog doesn't fit one query.
 fetch_pubmed <- function(cfg, drug_catalog) {
   raw_dir <- fs::path(cfg$paths$raw, "pubmed")
   fs::dir_create(raw_dir)
@@ -89,17 +76,12 @@ fetch_pubmed <- function(cfg, drug_catalog) {
 
   pop <- cfg$search_string$pubmed_population
   treat <- cfg$search_string$pubmed_treatment
-  # Limite superior = anio real de la corrida (cfg$retrieval$date_to_year,
-  # calculado en _targets.R), NO un numero inventado como "3000" — ver
-  # DECISIONS.md 2026-10-16.
   date_filter <- sprintf("%d:%d[dp]", cfg$retrieval$date_from_year, cfg$retrieval$date_to_year)
   chunk_size <- cfg$drug_branch$chunk_size %||% 80
   min_chars <- cfg$drug_branch$min_name_chars %||% 4
 
-  # prepare_match_names() (R/01_catalogo_farmacos.R), no
-  # drug_catalog$preferred_name directo — asi la busqueda excluye los MISMOS
-  # nombres de ruido (glucose/oxygen/hydrogen peroxide/bevacizumab) que ya
-  # excluye match_drugs_to_articles(). Ver DECISIONS.md (bug 2026-09-30).
+  # Reuses prepare_match_names() (R/01_catalogo_farmacos.R) so the search
+  # excludes the same noise terms as match_drugs_to_articles().
   match_names <- prepare_match_names(drug_catalog, min_chars = min_chars)
   drug_names <- tolower(c(match_names$single, match_names$multi))
   chunks <- split(drug_names, ceiling(seq_along(drug_names) / chunk_size))

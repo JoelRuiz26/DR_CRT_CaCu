@@ -1,19 +1,19 @@
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || (length(x) == 1 && is.na(x))) y else x
 
-#' Slug seguro para nombres de archivo a partir de un texto arbitrario.
+#' Safe filename slug from arbitrary text.
 slug <- function(x) gsub("[^A-Za-z0-9]+", "_", tolower(x))
 
-#' NA si la cadena esta vacia o ausente.
+#' NA if the string is empty or missing.
 na_if_empty <- function(x) {
   if (is.null(x) || length(x) == 0) return(NA_character_)
   x <- x[[1]]
   if (is.na(x) || x == "") NA_character_ else x
 }
 
-#' GET a una API JSON con reintentos y retroceso exponencial ({httr2}).
-#' @param url endpoint base.
-#' @param query lista de parametros de consulta.
-#' @param max_tries reintentos maximos ante 429/5xx.
+#' GET against a JSON API with retries and exponential backoff.
+#' @param url base endpoint.
+#' @param query list of query parameters.
+#' @param max_tries max retries on 429/5xx.
 http_get_json <- function(url, query = list(), max_tries = 5) {
   resp <- httr2::request(url) |>
     httr2::req_url_query(!!!query) |>
@@ -26,8 +26,8 @@ http_get_json <- function(url, query = list(), max_tries = 5) {
   httr2::resp_body_json(resp, simplifyVector = FALSE)
 }
 
-#' Archiva una respuesta cruda de API sin modificar, con marca de tiempo UTC.
-#' Es un requisito de PRISMA: la fecha exacta de busqueda debe quedar registrada.
+#' Archives a raw API response unmodified, with a UTC timestamp — required
+#' by PRISMA to record the exact search date.
 archive_raw_response <- function(content, dir, prefix) {
   fs::dir_create(dir)
   ts <- format(Sys.time(), "%Y%m%dT%H%M%OS3Z", tz = "UTC")

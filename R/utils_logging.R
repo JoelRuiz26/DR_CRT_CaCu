@@ -1,6 +1,6 @@
-#' Configura {logger} con salida a consola y a archivo.
-#' @param log_file ruta del archivo de log (se crea el directorio si falta).
-#' @param level nivel minimo, ej. "INFO", "DEBUG".
+#' Sets up logging with console and file output.
+#' @param log_file path to the log file (directory created if missing).
+#' @param level minimum level, e.g. "INFO", "DEBUG".
 setup_logging <- function(log_file = "logs/pipeline.log", level = "INFO") {
   fs::dir_create(fs::path_dir(log_file))
   logger::log_threshold(logger::as.loglevel(level))
@@ -11,10 +11,10 @@ setup_logging <- function(log_file = "logs/pipeline.log", level = "INFO") {
   invisible(TRUE)
 }
 
-#' Registra un conteo de un paso del pipeline con un mensaje uniforme.
-#' @param step nombre corto del paso, ej. "rxnorm_fetch".
-#' @param n numero de registros.
-#' @param detail texto adicional opcional.
+#' Logs a pipeline step's record count in a uniform message.
+#' @param step short step name, e.g. "rxnorm_fetch".
+#' @param n record count.
+#' @param detail optional extra text.
 log_step_count <- function(step, n, detail = NULL) {
   msg <- sprintf("%s: n = %d", step, n)
   if (!is.null(detail)) msg <- paste0(msg, " (", detail, ")")
