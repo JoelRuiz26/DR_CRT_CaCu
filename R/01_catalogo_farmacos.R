@@ -87,19 +87,31 @@ build_drug_catalog <- function(cfg) {
 #'     ophthalmology — opposite direction from this review's scope.
 CATALOG_MANUAL_EXCLUDE <- c("bevacizumab")
 
-#' Generic biochemical terms that match by ATC code but mostly add noise
-#' (reactive oxygen species, cell metabolism) instead of signaling an
-#' administered intervention.
-CATALOG_GENERIC_NOISE_EXCLUDE <- c("oxygen", "glucose", "hydrogen peroxide")
+#' Generic biochemical/elemental terms that match by ATC code but, in free
+#' text, overwhelmingly signal a lab value, diagnostic tracer or chemistry
+#' reagent rather than an administered intervention — verified against this
+#' review's own corpus: every record matched SOLELY by one of these turned
+#' out to be "blood urea nitrogen" (a lab marker), "99mTc sulfur colloid"
+#' (an imaging tracer), a metal-coordination-chemistry paper (ligands
+#' described as "sulfur-containing", "nitrogen-containing"), or similar.
+CATALOG_GENERIC_NOISE_EXCLUDE <- c(
+  "oxygen", "glucose", "hydrogen peroxide",
+  "urea", "nitrogen", "sulfur", "nitric oxide", "methionine",
+  "acetic acid", "protein c"
+)
 
-#' Splits catalog names into single-word (set intersection, fast) and
-#' multi-word (fixed substring match — a regex alternation across ~2,800
-#' names was too slow against full-text articles).
+#' Splits catalog names into single-token (set intersection, fast) and
+#' substring-matched (fixed substring match — a regex alternation across
+#' ~2,800 names was too slow against full-text articles). A name goes to
+#' substring matching whenever it has a space OR a hyphen: word-tokenizers
+#' split on both (e.g. "sipuleucel-t" tokenizes as "sipuleucel", "t"), so
+#' token intersection alone would silently miss every hyphenated name.
 prepare_match_names <- function(catalog, min_chars = 4) {
   names <- unique(catalog$preferred_name)
   names <- names[nchar(names) >= min_chars]
   names <- setdiff(names, c(CATALOG_MANUAL_EXCLUDE, CATALOG_GENERIC_NOISE_EXCLUDE))
-  list(single = names[!grepl(" ", names)], multi = names[grepl(" ", names)])
+  needs_substring <- grepl("[^a-z0-9]", names)
+  list(single = names[!needs_substring], multi = names[needs_substring])
 }
 
 #' Catalog drugs mentioned in a text: token intersection for single-word
@@ -111,14 +123,23 @@ find_drug_mentions <- function(text, names_single, names_multi) {
   c(hits_single, hits_multi)
 }
 
-#' Matches the catalog against article text (title+abstract, or later full
-#' text) and flags matches. Not called in the current pipeline: drug name is
-#' already required in the search query, so re-filtering by text presence
-#' before Rayyan would be redundant. Kept for later use on full text of
-#' already-included studies.
+#' Matches the catalog against article text and flags matches. This is the
+#' pipeline's real drug-name filter: the search query's own per-batch
+#' drug-name clause isn't reliable enough to trust alone (verified against
+#' the live PubMed/ClinicalTrials.gov APIs — a batch's "OR of 80 names" can
+#' silently stop constraining results), so every record is re-checked here
+#' against the full catalog before `classify_metadata_exclusions()`
+#' (R/03_export_rayyan.R) drops the ones with no match. Uses title+abstract,
+#' plus `interventions_text` when present (ClinicalTrials.gov: the brief
+#' summary alone often doesn't name the studied drug).
 match_drugs_to_articles <- function(articles, catalog) {
   names <- prepare_match_names(catalog)
-  match_text <- tolower(paste(articles$title, articles$abstract))
+  extra_text <- if ("interventions_text" %in% names(articles)) {
+    dplyr::coalesce(articles$interventions_text, "")
+  } else {
+    ""
+  }
+  match_text <- tolower(paste(articles$title, articles$abstract, extra_text))
   hits <- purrr::map(match_text, find_drug_mentions, names_single = names$single, names_multi = names$multi)
 
   articles$drug_matches <- hits

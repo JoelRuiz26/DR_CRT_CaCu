@@ -23,8 +23,9 @@ write_ris <- function(articles, path) {
   invisible(path)
 }
 
-#' Excludes records before Rayyan for STRUCTURAL reasons only (metadata
-#' already assigned by NLM/ClinicalTrials.gov, not title/abstract text):
+#' Excludes records before Rayyan for STRUCTURAL reasons (metadata already
+#' assigned by NLM/ClinicalTrials.gov, not drug-name text matching) plus one
+#' text-based check:
 #' - ClinicalTrials.gov WITHDRAWN or NOT_YET_RECRUITING: no participant was
 #'   ever enrolled, so there is no data to extract.
 #' - PubMed reviews/systematic reviews: secondary evidence, not primary;
@@ -32,6 +33,10 @@ write_ris <- function(articles, path) {
 #' - PubMed retracted publications: formally withdrawn by the journal.
 #' - PubMed editorials/comments/letters/news: secondary evidence.
 #' - PubMed clinical trial protocols: design-only, no results yet.
+#' - No catalog drug confirmed in the record's own text, per
+#'   `match_drugs_to_articles()` (R/01_catalogo_farmacos.R) — only when an
+#'   abstract/summary was available to check; records with none are kept
+#'   for manual screening rather than excluded on missing information.
 classify_metadata_exclusions <- function(articles) {
   ct_sin_datos <- articles$source == "clinicaltrials" &
     articles$publication_type %in% c("WITHDRAWN", "NOT_YET_RECRUITING")
@@ -48,22 +53,25 @@ classify_metadata_exclusions <- function(articles) {
      stringi::stri_detect_fixed(articles$publication_type, "Letter") |
      stringi::stri_detect_fixed(articles$publication_type, "News") |
      stringi::stri_detect_fixed(articles$publication_type, "Clinical Trial Protocol"))
+  sin_farmaco_confirmado <- !is.na(articles$eligibility_status) &
+    articles$eligibility_status == "excluible_sin_farmaco"
 
   articles$exclusion_reason <- dplyr::case_when(
     ct_sin_datos ~ "ensayo_sin_datos_posibles",
     es_retractado ~ "retractado",
     es_revision ~ "revision_evidencia_secundaria",
     es_secundario_sin_datos ~ "secundario_o_sin_resultados",
+    sin_farmaco_confirmado ~ "sin_farmaco_confirmado_en_texto",
     TRUE ~ NA_character_
   )
   articles
 }
 
 #' Exports the combined corpus to Rayyan (RIS), without deduplicating in R
-#' (Rayyan deduplicates on import by DOI/title/authors/year) and without
-#' filtering by drug-name presence in the text (already required by the
-#' search query). Only the structural exclusions from
-#' `classify_metadata_exclusions()` are applied here.
+#' (Rayyan deduplicates on import by DOI/title/authors/year). `articles_combined`
+#' must already carry `eligibility_status` from `match_drugs_to_articles()`
+#' (R/01_catalogo_farmacos.R) — `classify_metadata_exclusions()` uses it,
+#' together with the structural exclusions, to drop records.
 export_screening_set <- function(articles_combined, cfg) {
   dir <- cfg$paths$stage3
   fs::dir_create(dir)
@@ -87,6 +95,10 @@ export_screening_set <- function(articles_combined, cfg) {
                   sum(classified$exclusion_reason == "retractado", na.rm = TRUE))
   log_step_count("excluidos_secundario_o_sin_resultados",
                   sum(classified$exclusion_reason == "secundario_o_sin_resultados", na.rm = TRUE))
+  log_step_count("excluidos_sin_farmaco_confirmado_en_texto",
+                  sum(classified$exclusion_reason == "sin_farmaco_confirmado_en_texto", na.rm = TRUE))
+  log_step_count("mantenidos_sin_resumen_no_verificable",
+                  sum(classified$eligibility_status == "no_verificable_sin_resumen", na.rm = TRUE))
   logger::log_info("RIS para Rayyan en {fs::path(dir, 'para_rayyan.ris')}")
   to_screen
 }

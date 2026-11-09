@@ -48,7 +48,15 @@ list(
   tar_target(clinicaltrials_raw, fetch_clinicaltrials(cfg, drug_catalog)),
   tar_target(search_log, dplyr::bind_rows(pubmed_raw$log, clinicaltrials_raw$log)),
   tar_target(articles_combined, dplyr::bind_rows(pubmed_raw$articles, clinicaltrials_raw$articles)),
-  tar_target(stage1_outputs, save_stage1_outputs(search_log, articles_combined, pubmed_raw$chunk_log, clinicaltrials_raw$chunk_log, cfg)),
+  # Re-checks every record's own text against the full drug catalog: the
+  # search API's per-batch drug-name clause isn't reliable enough to trust
+  # alone (verified empirically against both live APIs — a batch's "OR of
+  # 80 names" can silently stop constraining results, letting through
+  # records matching only population+treatment). classify_metadata_exclusions()
+  # (R/03_export_rayyan.R) uses `eligibility_status` from this step to drop
+  # confirmed non-matches before Rayyan.
+  tar_target(articles_matched, match_drugs_to_articles(articles_combined, drug_catalog)),
+  tar_target(stage1_outputs, save_stage1_outputs(search_log, articles_matched, pubmed_raw$chunk_log, clinicaltrials_raw$chunk_log, cfg)),
 
   tar_target(drug_catalog_output, write_stage(drug_catalog, cfg$paths$stage5, "drug_catalog")),
 
@@ -68,5 +76,5 @@ list(
   # 2026-09-30. El cribado real (leer y decidir, y ahora tambien
   # deduplicar) lo hacen dos revisores humanos en Rayyan, fuera de R. Ver
   # DECISIONS.md 2026-10-15 para el historial completo. ---
-  tar_target(screening_set, export_screening_set(articles_combined, cfg))
+  tar_target(screening_set, export_screening_set(articles_matched, cfg))
 )

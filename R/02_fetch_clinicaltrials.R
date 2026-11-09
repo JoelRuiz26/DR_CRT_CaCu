@@ -1,16 +1,31 @@
 #' Parses a "study" object from the ClinicalTrials.gov API v2 into the
-#' normalized schema.
+#' normalized schema. `interventions_text` (intervention names/synonyms and
+#' arm labels) is kept separate from `abstract` because the brief summary
+#' alone often doesn't name the studied drug — it's what
+#' `match_drugs_to_articles()` (R/01_catalogo_farmacos.R) checks against,
+#' since the API's own query-side drug-name filter isn't reliable enough to
+#' trust alone (see `classify_metadata_exclusions()`, R/03_export_rayyan.R).
 parse_ctgov_study <- function(s) {
   ident <- s$protocolSection$identificationModule
   status <- s$protocolSection$statusModule
   desc <- s$protocolSection$descriptionModule
+  arms <- s$protocolSection$armsInterventionsModule
   nct <- ident$nctId %||% NA_character_
+
+  interventions <- arms$interventions %||% list()
+  intervention_text <- purrr::map_chr(interventions, function(x) {
+    paste(c(x$name, unlist(x$otherNames)), collapse = " ")
+  })
+  arm_groups <- arms$armGroups %||% list()
+  arm_text <- purrr::map_chr(arm_groups, function(x) x$label %||% "")
+  interventions_text <- paste(c(intervention_text, arm_text), collapse = " ")
 
   tibble::tibble(
     source = "clinicaltrials", source_id = nct,
     doi = NA_character_, pmid = NA_character_, pmcid = NA_character_,
     title = ident$briefTitle %||% NA_character_,
     abstract = desc$briefSummary %||% NA_character_,
+    interventions_text = na_if_empty(interventions_text),
     journal = NA_character_,
     year = suppressWarnings(as.integer(
       stringr::str_extract(status$startDateStruct$date %||% "", "^\\d{4}")
