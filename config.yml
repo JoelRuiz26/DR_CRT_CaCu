@@ -41,7 +41,8 @@ retrieval:
   # estandar de quimiorradiacion con cisplatino de 1999-2000; la revision
   # FIGO 2018; la duracion tipica de un reposicionamiento) y por que esta
   # es la mejor justificada para el tema central de la revision.
-  years_back: 20
+  # 2026-11-09: acotado de 20 a 10 anios, decision explicita del usuario.
+  years_back: 10
   # No hay un filtro de idioma real aplicado via API (PubMed no tiene un
   # parametro de idioma en esta cadena, ClinicalTrials.gov tampoco). La
   # restriccion a ingles es IMPLICITA: los terminos de busqueda estan
@@ -139,5 +140,8 @@ logging:
 # DECISIONS.md para el detalle de la validacion.
 drug_branch:
   enabled: true
-  chunk_size: 80
+  # 2026-11-09: probado en 10 (antes 80), decision explicita del usuario,
+  # para corroborar si el tamano de lote cambia el resultado final tras la
+  # verificacion de texto en match_drugs_to_articles().
+  chunk_size: 10
   min_name_chars: 4
