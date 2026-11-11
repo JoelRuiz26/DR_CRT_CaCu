@@ -6,7 +6,7 @@
 
 source("R/figures/utils_figures.R")
 
-EVIDENCE_LEVELS <- c("In vitro only", "In vivo only", "In vitro + in vivo", "Clinical")
+EVIDENCE_LEVELS <- c("Preclinical", "Clinical")
 
 build_year_trend <- function() {
   articles <- utils::read.csv("data/04_texto_completo/figure_dataset_articles.csv", stringsAsFactors = FALSE)

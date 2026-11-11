@@ -6,10 +6,7 @@
 PALETTE <- list(
   # Categorical (identity): Okabe-Ito, colorblind-safe, fixed assignment.
   source = c("PubMed" = "#0072B2", "ClinicalTrials.gov" = "#D55E00"),
-  evidence = c(
-    "In vitro only" = "#009E73", "In vivo only" = "#E69F00",
-    "In vitro + in vivo" = "#56B4E9", "Clinical" = "#CC79A7"
-  ),
+  evidence = c("Preclinical" = "#009E73", "Clinical" = "#CC79A7"),
   # Sequential (magnitude, heatmap only): one hue, white -> dark navy. A
   # plainer, single-hue ramp reads as a clinical/biomedical figure; still
   # monotonic in lightness, so it degrades safely to greyscale.

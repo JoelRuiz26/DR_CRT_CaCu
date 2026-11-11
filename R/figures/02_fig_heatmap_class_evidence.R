@@ -1,12 +1,12 @@
-#' Heatmap: pharmacological group (WHO ATC Level 1) x evidence category.
-#' Cell value is the number of DISTINCT articles — each article falls into
-#' exactly ONE column (`evidence_category`, from 00_prepare_figure_data.R),
-#' so a study with both an in-vitro and an in-vivo arm is not counted
-#' twice; it has its own "In vitro + in vivo" column instead.
+#' Heatmap: pharmacological group (WHO ATC Level 1) x evidence category
+#' (Preclinical / Clinical). Cell value is the number of DISTINCT articles
+#' — each article falls into exactly ONE column (`evidence_category`, from
+#' 00_prepare_figure_data.R), so a study with both an in-vitro and an
+#' in-vivo arm is not counted twice.
 
 source("R/figures/utils_figures.R")
 
-EVIDENCE_LEVELS <- c("In vitro only", "In vivo only", "In vitro + in vivo", "Clinical")
+EVIDENCE_LEVELS <- c("Preclinical", "Clinical")
 
 build_heatmap <- function() {
   long <- utils::read.csv("data/04_texto_completo/figure_dataset_long.csv", stringsAsFactors = FALSE)
@@ -46,7 +46,7 @@ build_heatmap <- function() {
       name = "Studies\n(n)", low = PALETTE$sequential_low, high = PALETTE$sequential_high,
       guide = ggplot2::guide_colorbar(barwidth = 0.5, barheight = 5, ticks = FALSE)
     ) +
-    ggplot2::scale_x_discrete(position = "top", expand = c(0, 0), labels = function(x) stringr::str_wrap(x, 9)) +
+    ggplot2::scale_x_discrete(position = "top", expand = c(0, 0)) +
     ggplot2::scale_y_discrete(expand = c(0, 0)) +
     ggplot2::labs(x = NULL, y = NULL) +
     theme_journal() +
@@ -60,5 +60,5 @@ build_heatmap <- function() {
 }
 
 if (sys.nframe() == 0) {
-  save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 6, height = 5.8)
+  save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 4, height = 5.8)
 }

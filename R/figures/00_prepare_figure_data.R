@@ -71,17 +71,15 @@ classify_evidence_level <- function(source, text) {
   in_vitro <- in_vitro & source != "clinicaltrials"
   in_vivo <- in_vivo & source != "clinicaltrials"
 
-  # Mutually exclusive category for plotting: in vitro and in vivo are
-  # routinely the SAME article (27 of 31 in-vivo articles here also have an
-  # in-vitro arm) — stacking the three raw flags as if independent would
-  # count that one article twice. Clinical takes priority when present
-  # (it is the highest evidence tier); otherwise the article falls into
-  # exactly one of "In vitro only" / "In vivo only" / "In vitro + in vivo".
+  # Mutually exclusive category for plotting, collapsed to two tiers:
+  # "Clinical" (human data) vs. "Preclinical" (in vitro and/or in vivo —
+  # the in_vitro/in_vivo flags still say which, in case that's wanted
+  # later, but they overlap too often — 27 of 31 in-vivo articles here
+  # also have an in-vitro arm — to plot as three separate series without
+  # double-counting the same article).
   category <- dplyr::case_when(
     clinical ~ "Clinical",
-    in_vitro & in_vivo ~ "In vitro + in vivo",
-    in_vitro ~ "In vitro only",
-    in_vivo ~ "In vivo only",
+    in_vitro | in_vivo ~ "Preclinical",
     TRUE ~ NA_character_
   )
 
