@@ -70,7 +70,25 @@ classify_evidence_level <- function(source, text) {
   clinical <- source == "clinicaltrials" | clinical_text
   in_vitro <- in_vitro & source != "clinicaltrials"
   in_vivo <- in_vivo & source != "clinicaltrials"
-  tibble::tibble(evidence_in_vitro = in_vitro, evidence_in_vivo = in_vivo, evidence_clinical = clinical)
+
+  # Mutually exclusive category for plotting: in vitro and in vivo are
+  # routinely the SAME article (27 of 31 in-vivo articles here also have an
+  # in-vitro arm) — stacking the three raw flags as if independent would
+  # count that one article twice. Clinical takes priority when present
+  # (it is the highest evidence tier); otherwise the article falls into
+  # exactly one of "In vitro only" / "In vivo only" / "In vitro + in vivo".
+  category <- dplyr::case_when(
+    clinical ~ "Clinical",
+    in_vitro & in_vivo ~ "In vitro + in vivo",
+    in_vitro ~ "In vitro only",
+    in_vivo ~ "In vivo only",
+    TRUE ~ NA_character_
+  )
+
+  tibble::tibble(
+    evidence_in_vitro = in_vitro, evidence_in_vivo = in_vivo, evidence_clinical = clinical,
+    evidence_category = category
+  )
 }
 
 prepare_figure_data <- function() {

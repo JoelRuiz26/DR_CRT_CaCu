@@ -1,26 +1,23 @@
 #' Stacked bar: included studies per publication year, split by evidence
-#' level, showing how the field has grown and shifted over time.
+#' category, showing how the field has grown and shifted over time. Each
+#' study counts exactly once (see evidence_category in
+#' 00_prepare_figure_data.R) — a study with both an in-vitro and an
+#' in-vivo arm is not double-counted across two segments.
 
 source("R/figures/utils_figures.R")
+
+EVIDENCE_LEVELS <- c("In vitro only", "In vivo only", "In vitro + in vivo", "Clinical")
 
 build_year_trend <- function() {
   articles <- utils::read.csv("data/04_texto_completo/figure_dataset_articles.csv", stringsAsFactors = FALSE)
 
   by_year <- articles |>
-    tidyr::pivot_longer(
-      cols = c(evidence_in_vitro, evidence_in_vivo, evidence_clinical),
-      names_to = "evidence_level", values_to = "present"
-    ) |>
-    dplyr::filter(present) |>
-    dplyr::mutate(evidence_level = c(
-      evidence_in_vitro = "In vitro", evidence_in_vivo = "In vivo", evidence_clinical = "Clinical"
-    )[evidence_level]) |>
-    dplyr::count(year, evidence_level, name = "n_studies") |>
-    dplyr::filter(!is.na(year))
+    dplyr::filter(!is.na(evidence_category) & nzchar(evidence_category), !is.na(year)) |>
+    dplyr::count(year, evidence_category, name = "n_studies")
 
-  by_year$evidence_level <- factor(by_year$evidence_level, levels = c("In vitro", "In vivo", "Clinical"))
+  by_year$evidence_category <- factor(by_year$evidence_category, levels = EVIDENCE_LEVELS)
 
-  ggplot2::ggplot(by_year, ggplot2::aes(x = year, y = n_studies, fill = evidence_level)) +
+  ggplot2::ggplot(by_year, ggplot2::aes(x = year, y = n_studies, fill = evidence_category)) +
     ggplot2::geom_col(width = 0.7, color = "white", linewidth = 0.15) +
     ggplot2::scale_fill_manual(values = PALETTE$evidence, name = "Evidence level") +
     ggplot2::scale_x_continuous(breaks = scales::breaks_pretty(n = 8)) +

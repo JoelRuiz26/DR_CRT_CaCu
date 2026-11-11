@@ -1,36 +1,30 @@
-#' 100%-stacked bar: composition of evidence levels contributed by each
-#' source. ClinicalTrials.gov entries are registry records (clinical by
-#' definition); PubMed is where the preclinical evidence comes from — this
-#' figure makes that split explicit rather than leaving it implicit.
+#' 100%-stacked bar: composition of evidence categories contributed by each
+#' source (each study counts once — see evidence_category in
+#' 00_prepare_figure_data.R). ClinicalTrials.gov entries are registry
+#' records (clinical by definition); PubMed is where the preclinical
+#' evidence comes from — this figure makes that split explicit.
 
 source("R/figures/utils_figures.R")
+
+EVIDENCE_LEVELS <- c("In vitro only", "In vivo only", "In vitro + in vivo", "Clinical")
 
 build_source_evidence <- function() {
   articles <- utils::read.csv("data/04_texto_completo/figure_dataset_articles.csv", stringsAsFactors = FALSE)
 
   by_source <- articles |>
-    tidyr::pivot_longer(
-      cols = c(evidence_in_vitro, evidence_in_vivo, evidence_clinical),
-      names_to = "evidence_level", values_to = "present"
-    ) |>
-    dplyr::filter(present) |>
-    dplyr::mutate(
-      evidence_level = c(
-        evidence_in_vitro = "In vitro", evidence_in_vivo = "In vivo", evidence_clinical = "Clinical"
-      )[evidence_level],
-      source = c(pubmed = "PubMed", clinicaltrials = "ClinicalTrials.gov")[source]
-    ) |>
-    dplyr::count(source, evidence_level, name = "n_studies") |>
+    dplyr::filter(!is.na(evidence_category) & nzchar(evidence_category)) |>
+    dplyr::mutate(source = c(pubmed = "PubMed", clinicaltrials = "ClinicalTrials.gov")[source]) |>
+    dplyr::count(source, evidence_category, name = "n_studies") |>
     dplyr::group_by(source) |>
     dplyr::mutate(share = n_studies / sum(n_studies)) |>
     dplyr::ungroup()
 
-  by_source$evidence_level <- factor(by_source$evidence_level, levels = c("In vitro", "In vivo", "Clinical"))
+  by_source$evidence_category <- factor(by_source$evidence_category, levels = EVIDENCE_LEVELS)
 
   # geom_col with a categorical y and continuous x draws horizontal bars
   # directly — avoids coord_flip(), which on this ggplot2/Cairo combination
   # was duplicating the y axis tick labels as stray text inside the panel.
-  ggplot2::ggplot(by_source, ggplot2::aes(y = source, x = share, fill = evidence_level)) +
+  ggplot2::ggplot(by_source, ggplot2::aes(y = source, x = share, fill = evidence_category)) +
     ggplot2::geom_col(width = 0.5, color = "white", linewidth = 0.3, orientation = "y") +
     ggplot2::geom_text(
       ggplot2::aes(label = n_studies),
