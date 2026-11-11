@@ -104,22 +104,28 @@ prepare_figure_data <- function() {
   fs::dir_create(OUT_DIR)
   utils::write.csv(articles, fs::path(OUT_DIR, "figure_dataset_articles.csv"), row.names = FALSE, na = "")
 
-  # A handful of versatile drugs carry many ATC codes across unrelated
-  # routes (oral, dermatological, ophthalmic, respiratory...) because they
-  # ARE approved for all of them — dexamethasone has 9. But in this corpus
-  # they show up for ONE specific use (dexamethasone: oral/IV antiemetic
-  # premedication during chemo), so assigning every one of its codes to
-  # those same articles smears that one drug's literature across several
-  # "pharmacological group" bars that have nothing to do with what the
-  # articles are actually about (verified: dexamethasone alone accounts
-  # for most of the "Clinical" count in Respiratory, Dermatologicals, and
-  # Systemic hormonal preparations). Pin it to the one class that matches
-  # its actual role here; add to this list if full-text review finds
-  # another case like it.
+  # RxClass assigns a drug one ATC code per approved route/indication, not
+  # one canonical "primary use" — many catalog drugs carry several (9 for
+  # dexamethasone). Counting a drug under every one of its codes smears its
+  # literature across unrelated "pharmacological group" bars (confirmed:
+  # dexamethasone's ~15 articles, all about its one real role here —
+  # oral/IV antiemetic premedication during chemo — were inflating
+  # Respiratory, Dermatologicals, and Sensory organs too). So every drug is
+  # pinned to exactly ONE class: the first one RxClass listed, by default.
+  # The one verified, deliberate exception is dexamethasone, pinned to H02
+  # (systemic hormonal preparations) instead of its alphabetically-first
+  # A01 — add to this list if full-text review finds another case where
+  # the default picks a class the drug isn't actually being used for here.
   ATC_PRIMARY_OVERRIDE <- c(dexamethasone = "H02")
 
-  # Long format: one row per (article, matched drug, ATC code) — what the
-  # class x evidence heatmap and the ATC-breadth figure read from.
+  primary_atc_class <- function(atc_classes_str, drug) {
+    default <- trimws(stringr::str_split(atc_classes_str, ";\\s*")[[1]][1])
+    dplyr::coalesce(ATC_PRIMARY_OVERRIDE[drug], default)
+  }
+
+  # Long format: one row per (article, matched drug) with its single
+  # primary ATC class — what the class x evidence heatmap and the
+  # ATC-breadth figure read from.
   long <- articles |>
     dplyr::mutate(drug = stringr::str_split(drug_matches, ";\\s*")) |>
     tidyr::unnest(drug) |>
@@ -129,13 +135,10 @@ prepare_figure_data <- function() {
       dplyr::select(catalog, preferred_name, atc_classes),
       by = dplyr::join_by(drug == preferred_name)
     ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(atc_code = primary_atc_class(atc_classes, drug)) |>
+    dplyr::ungroup() |>
     dplyr::mutate(
-      atc_classes = dplyr::if_else(drug %in% names(ATC_PRIMARY_OVERRIDE), ATC_PRIMARY_OVERRIDE[drug], atc_classes)
-    ) |>
-    dplyr::mutate(atc_code = stringr::str_split(atc_classes, ";\\s*")) |>
-    tidyr::unnest(atc_code) |>
-    dplyr::mutate(
-      atc_code = trimws(atc_code),
       atc_level1 = substr(atc_code, 1, 1),
       atc_level1_name = ATC_LEVEL1_NAMES[atc_level1]
     ) |>

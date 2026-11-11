@@ -14,7 +14,7 @@ source("R/figures/01_fig_prisma_flow.R")
 save_figure(build_prisma_flow(), "fig01_prisma_flow", width = 7.5, height = 9)
 
 source("R/figures/02_fig_heatmap_class_evidence.R")
-save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 7, height = 6)
+save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 6, height = 5.5)
 
 source("R/figures/03_fig_top_drugs.R")
 save_figure(build_top_drugs(), "fig03_top_drugs", width = 7, height = 5.5)
@@ -27,5 +27,11 @@ save_figure(build_atc_breadth(), "fig05_atc_breadth", width = 7, height = 5.5)
 
 source("R/figures/06_fig_source_evidence.R")
 save_figure(build_source_evidence(), "fig06_source_evidence", width = 7, height = 5)
+
+source("R/figures/07_fig_drug_group_heatmap.R")
+res07 <- build_drug_group_heatmap()
+save_figure(res07$plot, "fig07_drug_group_heatmap",
+  width = 6.5, height = max(10, res07$n_drugs * 0.155 + res07$n_groups * 0.22)
+)
 
 cat("Listo. Figuras en outputs/figures/\n")
