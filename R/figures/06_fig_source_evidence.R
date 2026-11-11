@@ -28,21 +28,16 @@ build_source_evidence <- function() {
   by_source$evidence_level <- factor(by_source$evidence_level, levels = c("In vitro", "In vivo", "Clinical"))
 
   ggplot2::ggplot(by_source, ggplot2::aes(x = source, y = share, fill = evidence_level)) +
-    ggplot2::geom_col(width = 0.55, color = "white", linewidth = 0.3) +
+    ggplot2::geom_col(width = 0.5, color = "white", linewidth = 0.3) +
     ggplot2::geom_text(
       ggplot2::aes(label = n_studies),
-      position = ggplot2::position_stack(vjust = 0.5), size = 3.2, color = "white"
+      position = ggplot2::position_stack(vjust = 0.5), size = 2.7, family = FONT_FAMILY, color = "white"
     ) +
     ggplot2::scale_fill_manual(values = PALETTE$evidence, name = "Evidence level") +
-    ggplot2::scale_y_continuous(labels = scales::percent_format(), expand = ggplot2::expansion(mult = c(0, 0.02))) +
+    ggplot2::scale_y_continuous(labels = scales::percent_format(), expand = ggplot2::expansion(mult = c(0, 0.01))) +
     ggplot2::coord_flip() +
-    ggplot2::labs(
-      title = "Evidence level by source",
-      subtitle = "Share of included studies, by where they were identified",
-      x = NULL, y = "Share of studies"
-    ) +
-    theme_journal() +
-    ggplot2::theme(panel.grid.major.y = ggplot2::element_blank())
+    ggplot2::labs(x = NULL, y = "Share of studies") +
+    theme_journal()
 }
 
 if (sys.nframe() == 0) {

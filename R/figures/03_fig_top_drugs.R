@@ -16,16 +16,12 @@ build_top_drugs <- function(top_n = 15) {
   counts$drug <- factor(counts$drug, levels = rev(counts$drug))
 
   ggplot2::ggplot(counts, ggplot2::aes(x = n_studies, y = drug)) +
-    ggplot2::geom_col(fill = "#0072B2", width = 0.7) +
-    ggplot2::geom_text(ggplot2::aes(label = n_studies), hjust = -0.3, size = 3.2, color = "grey20") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.15))) +
-    ggplot2::labs(
-      title = paste("The", top_n, "most-studied repurposing candidates"),
-      subtitle = "Number of included studies per non-oncological drug",
-      x = "Studies (n)", y = NULL
-    ) +
+    ggplot2::geom_col(fill = PALETTE$sequential_high, width = 0.65) +
+    ggplot2::geom_text(ggplot2::aes(label = n_studies), hjust = -0.4, size = 2.7, family = FONT_FAMILY, color = "black") +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.12))) +
+    ggplot2::labs(x = "Studies (n)", y = NULL) +
     theme_journal() +
-    ggplot2::theme(panel.grid.major.y = ggplot2::element_blank(), legend.position = "none")
+    ggplot2::theme(legend.position = "none")
 }
 
 if (sys.nframe() == 0) {

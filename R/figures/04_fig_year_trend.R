@@ -21,15 +21,11 @@ build_year_trend <- function() {
   by_year$evidence_level <- factor(by_year$evidence_level, levels = c("In vitro", "In vivo", "Clinical"))
 
   ggplot2::ggplot(by_year, ggplot2::aes(x = year, y = n_studies, fill = evidence_level)) +
-    ggplot2::geom_col(width = 0.75, color = "white", linewidth = 0.2) +
+    ggplot2::geom_col(width = 0.7, color = "white", linewidth = 0.15) +
     ggplot2::scale_fill_manual(values = PALETTE$evidence, name = "Evidence level") +
     ggplot2::scale_x_continuous(breaks = scales::breaks_pretty(n = 8)) +
-    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.08))) +
-    ggplot2::labs(
-      title = "Publication trend by evidence level",
-      subtitle = "Included studies per year, stacked by type of evidence",
-      x = NULL, y = "Studies (n)"
-    ) +
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
+    ggplot2::labs(x = NULL, y = "Studies (n)") +
     theme_journal()
 }
 

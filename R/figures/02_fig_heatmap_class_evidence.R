@@ -29,31 +29,34 @@ build_heatmap <- function() {
 
   cell_counts$atc_level1_name <- factor(cell_counts$atc_level1_name, levels = group_order)
   cell_counts$evidence_level <- factor(cell_counts$evidence_level, levels = c("In vitro", "In vivo", "Clinical"))
-  cell_counts$label_color <- ifelse(cell_counts$n_studies > max(cell_counts$n_studies) * 0.55, "white", "grey10")
+  cell_counts$label_color <- ifelse(
+    cell_counts$n_studies > max(cell_counts$n_studies) * 0.6, "white", "black"
+  )
 
   ggplot2::ggplot(cell_counts, ggplot2::aes(x = evidence_level, y = atc_level1_name, fill = n_studies)) +
-    ggplot2::geom_tile(color = "white", linewidth = 1.2) +
-    ggplot2::geom_text(ggplot2::aes(label = n_studies, color = label_color), size = 3.3, show.legend = FALSE) +
-    ggplot2::scale_color_identity() +
-    ggplot2::scale_fill_viridis_c(name = "Studies (n)", option = "viridis") +
-    ggplot2::scale_x_discrete(position = "top") +
-    ggplot2::labs(
-      title = "Pharmacological groups by level of evidence",
-      subtitle = stringr::str_wrap(
-        "Non-oncological drug classes combined with cisplatin or carboplatin ± radiation in cervical cancer",
-        width = 62
-      ),
-      x = NULL, y = NULL
+    ggplot2::geom_tile(color = NA) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = n_studies, color = label_color),
+      size = 2.7, family = FONT_FAMILY, show.legend = FALSE
     ) +
+    ggplot2::scale_color_identity() +
+    ggplot2::scale_fill_gradient(
+      name = "Studies\n(n)", low = PALETTE$sequential_low, high = PALETTE$sequential_high,
+      guide = ggplot2::guide_colorbar(barwidth = 0.5, barheight = 5, ticks = FALSE)
+    ) +
+    ggplot2::scale_x_discrete(position = "top", expand = c(0, 0)) +
+    ggplot2::scale_y_discrete(expand = c(0, 0)) +
+    ggplot2::labs(x = NULL, y = NULL) +
     theme_journal() +
     ggplot2::theme(
-      panel.grid = ggplot2::element_blank(),
-      axis.text.y = ggplot2::element_text(size = ggplot2::rel(0.9)),
-      legend.position = "right",
-      legend.key.height = ggplot2::unit(1.1, "cm")
+      axis.line = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_text(size = ggplot2::rel(0.95), hjust = 1),
+      axis.text.x = ggplot2::element_text(size = ggplot2::rel(1), face = "bold"),
+      legend.position = "right"
     )
 }
 
 if (sys.nframe() == 0) {
-  save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 7, height = 6)
+  save_figure(build_heatmap(), "fig02_heatmap_class_evidence", width = 4.6, height = 5.8)
 }

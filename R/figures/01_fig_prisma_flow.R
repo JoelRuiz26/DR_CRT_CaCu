@@ -71,7 +71,7 @@ build_prisma_flow <- function() {
     ggplot2::geom_text(
       data = boxes,
       ggplot2::aes(x = x + w / 2, y = y + h / 2, label = label),
-      size = 3.1, lineheight = 1.05
+      size = 2.9, lineheight = 1.05, family = FONT_FAMILY
     ) +
     ggplot2::geom_segment(
       data = arrows,
@@ -80,8 +80,9 @@ build_prisma_flow <- function() {
       color = "grey25", linewidth = 0.4
     ) +
     ggplot2::coord_fixed(xlim = c(0.5, 9.3), ylim = c(0, 11), clip = "off") +
-    ggplot2::theme_void() +
-    ggplot2::labs(title = "Identification of studies via databases and registers")
+    ggplot2::theme_void(base_family = FONT_FAMILY) +
+    ggplot2::labs(title = "Identification of studies via databases and registers") +
+    ggplot2::theme(plot.title = ggplot2::element_text(size = 11, face = "bold", margin = ggplot2::margin(b = 8)))
 }
 
 if (sys.nframe() == 0) {
