@@ -14,7 +14,13 @@ PALETTE <- list(
   sequential_high = "#08306B"
 )
 
-FONT_FAMILY <- "Nimbus Sans"
+#' "Nimbus Sans" (Helvetica-equivalent) was tried first but its Cairo font
+#' metrics are miscalculated at this size/dpi — ggplot2's gtable layout
+#' under-reserves space for axis text and the legend, so long labels render
+#' overlapping other elements (confirmed with a minimal reproduction, and
+#' confirmed independent of ggplot2 version, 3.5.2 vs 4.0.3). Plain "sans"
+#' (DejaVu Sans here) does not have this problem.
+FONT_FAMILY <- "sans"
 
 #' WHO ATC Level 1 (anatomical main group) code -> name, for the subset of
 #' letters that can appear in this catalog (L01/L02, oncology, are excluded

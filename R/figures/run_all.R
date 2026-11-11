@@ -26,6 +26,6 @@ source("R/figures/05_fig_atc_breadth.R")
 save_figure(build_atc_breadth(), "fig05_atc_breadth", width = 7, height = 5.5)
 
 source("R/figures/06_fig_source_evidence.R")
-save_figure(build_source_evidence(), "fig06_source_evidence", width = 7, height = 3.5)
+save_figure(build_source_evidence(), "fig06_source_evidence", width = 7, height = 5)
 
 cat("Listo. Figuras en outputs/figures/\n")

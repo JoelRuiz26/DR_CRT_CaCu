@@ -18,24 +18,58 @@ CATALOG_FILE <- "data/05_catalogo_farmacos/drug_catalog.csv"
 OUT_DIR <- "data/04_texto_completo"
 
 #' Keyword heuristic for evidence level, run on title + abstract (+
-#' intervention text, for ClinicalTrials.gov). A ClinicalTrials.gov record is
-#' always clinical by construction (it's a trial registry entry). A study
-#' can be flagged TRUE on more than one level (e.g. a paper with both a
-#' cell-line and a mouse-xenograft experiment).
+#' intervention text, for ClinicalTrials.gov).
+#'
+#' A ClinicalTrials.gov record is ALWAYS clinical-only, by construction —
+#' the registry only takes human studies, so no text check is needed or
+#' allowed to override that (a record's own background/rationale text can
+#' and does cite unrelated prior preclinical work, which must never flip
+#' the record's own design type).
+#'
+#' For PubMed, "clinical" requires a specific, hard-to-fake design phrase
+#' (phase N trial, randomized/cohort/case-series/retrospective/prospective,
+#' an NCT id, or the literal phrase "clinical trial") — NOT a bare mention
+#' of "patient(s)" or "clinically", both of which turned out to fire
+#' constantly on ordinary background sentences in otherwise purely
+#' preclinical papers ("cisplatin resistance in clinical settings",
+#' "clinically relevant chemotherapeutics") without the study itself
+#' being a clinical study. Likewise "in vivo" excludes "mimic/resemble
+#' in vivo", the standard way an in vitro model paper describes its own
+#' goal, not an animal experiment it ran.
+#'
+#' A study can still be flagged TRUE on more than one level (e.g. a paper
+#' with both a cell-line and a mouse-xenograft experiment).
 classify_evidence_level <- function(source, text) {
   text <- tolower(text)
   in_vitro <- stringr::str_detect(
     text,
-    "\\bin vitro\\b|cell line|cultured cells|\\bhela\\b|\\bsiha\\b|\\bcaski\\b|\\bc-?33a\\b|mtt assay|cytotoxicity assay"
+    paste0(
+      "\\bin vitro\\b|cell line|cultured cells|\\bhela\\b|\\bsiha\\b|\\bcaski\\b|\\bc-?33a\\b",
+      "|mtt assay|cytotoxicity assay|\\b(cancer|tumor|tumour|cc) cells\\b",
+      "|knockdown|overexpression|transfect(ed|ion)|western blot|qrt-pcr|\\bsirna\\b"
+    )
   )
   in_vivo <- stringr::str_detect(
     text,
-    "\\bin vivo\\b|xenograft|\\bmice\\b|\\bmouse\\b|murine|\\brats?\\b|animal model|nude mice"
+    "(?<!mimic )(?<!mimicking )(?<!resembl(e|ing) )\\bin vivo\\b|xenograft|\\bmice\\b|\\bmouse\\b|murine|\\brats?\\b|animal model|nude mice"
   )
-  clinical <- source == "clinicaltrials" | stringr::str_detect(
+  # Each of these is specific enough, on its own, to rarely fire on a purely
+  # preclinical paper's background text — unlike a bare "patient(s)" or
+  # "clinically", which fired constantly on sentences like "cisplatin
+  # resistance in clinical settings" without the study itself being clinical
+  # (see the comment above this function).
+  clinical_text <- stringr::str_detect(
     text,
-    "\\bpatients?\\b|clinical trial|\\bphase (i|ii|iii|1|2|3)\\b|randomi[sz]ed|\\bcohort\\b|retrospective|prospective study|case series"
+    paste0(
+      "\\bclinical trial\\b|\\bnct0\\d{7}\\b|\\bphase (i{1,3}|[123])[ab]?\\b|randomi[sz]ed",
+      "|\\bcohort\\b|\\bcase (series|report)\\b|\\bretrospective\\b|\\bprospective\\b",
+      "|\\bmulticent(er|re)\\b|post hoc analysis|\\bparticipants\\b|double-blind|placebo-controlled",
+      "|\\bsurvey\\b"
+    )
   )
+  clinical <- source == "clinicaltrials" | clinical_text
+  in_vitro <- in_vitro & source != "clinicaltrials"
+  in_vivo <- in_vivo & source != "clinicaltrials"
   tibble::tibble(evidence_in_vitro = in_vitro, evidence_in_vivo = in_vivo, evidence_clinical = clinical)
 }
 
