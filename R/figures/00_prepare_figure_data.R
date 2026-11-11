@@ -104,6 +104,20 @@ prepare_figure_data <- function() {
   fs::dir_create(OUT_DIR)
   utils::write.csv(articles, fs::path(OUT_DIR, "figure_dataset_articles.csv"), row.names = FALSE, na = "")
 
+  # A handful of versatile drugs carry many ATC codes across unrelated
+  # routes (oral, dermatological, ophthalmic, respiratory...) because they
+  # ARE approved for all of them — dexamethasone has 9. But in this corpus
+  # they show up for ONE specific use (dexamethasone: oral/IV antiemetic
+  # premedication during chemo), so assigning every one of its codes to
+  # those same articles smears that one drug's literature across several
+  # "pharmacological group" bars that have nothing to do with what the
+  # articles are actually about (verified: dexamethasone alone accounts
+  # for most of the "Clinical" count in Respiratory, Dermatologicals, and
+  # Systemic hormonal preparations). Pin it to the one class that matches
+  # its actual role here; add to this list if full-text review finds
+  # another case like it.
+  ATC_PRIMARY_OVERRIDE <- c(dexamethasone = "H02")
+
   # Long format: one row per (article, matched drug, ATC code) — what the
   # class x evidence heatmap and the ATC-breadth figure read from.
   long <- articles |>
@@ -114,6 +128,9 @@ prepare_figure_data <- function() {
     dplyr::left_join(
       dplyr::select(catalog, preferred_name, atc_classes),
       by = dplyr::join_by(drug == preferred_name)
+    ) |>
+    dplyr::mutate(
+      atc_classes = dplyr::if_else(drug %in% names(ATC_PRIMARY_OVERRIDE), ATC_PRIMARY_OVERRIDE[drug], atc_classes)
     ) |>
     dplyr::mutate(atc_code = stringr::str_split(atc_classes, ";\\s*")) |>
     tidyr::unnest(atc_code) |>
