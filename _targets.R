@@ -7,7 +7,9 @@ tar_option_set(
   )
 )
 
-tar_source("R")
+#' R/figures/ is deliberately excluded: those scripts are run by hand after
+#' full-text review (see R/figures/run_all.R), not as part of this pipeline.
+tar_source(files = list.files("R", pattern = "\\.R$", full.names = TRUE))
 
 list(
   tar_target(cfg_file, "config.yml", format = "file"),
